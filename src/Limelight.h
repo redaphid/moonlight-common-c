@@ -820,6 +820,14 @@ int LiSendControllerMotionEvent(uint8_t controllerNumber, uint8_t motionType, fl
 #define LI_BATTERY_PERCENTAGE_UNKNOWN 0xFF
 int LiSendControllerBatteryEvent(uint8_t controllerNumber, uint8_t batteryState, uint8_t batteryPercentage);
 
+// This function queues a MIDI event to be sent to the remote server.
+// It sends a MIDI short message (up to 3 bytes) to be played on the
+// host's MIDI output device. This is an Apollo protocol extension.
+// deviceIndex is 0 for the default MIDI device.
+// data points to 1-3 bytes of MIDI message data (status, data1, data2).
+// length is the number of valid bytes in data (1-3).
+int LiSendMidiEvent(uint8_t deviceIndex, const uint8_t* data, uint8_t length);
+
 // This function queues a vertical scroll event to the remote server.
 // The number of "clicks" is multiplied by WHEEL_DELTA (120) before
 // being sent to the PC.

@@ -195,4 +195,12 @@ typedef struct _SS_CONTROLLER_BATTERY_PACKET {
     uint8_t zero[1]; // Alignment/reserved
 } SS_CONTROLLER_BATTERY_PACKET, *PSS_CONTROLLER_BATTERY_PACKET;
 
+#define APOLLO_MIDI_MAGIC 0x00003003
+typedef struct _APOLLO_MIDI_PACKET {
+    NV_INPUT_HEADER header;
+    uint8_t deviceIndex;
+    uint8_t messageLength;
+    uint8_t data[3];
+} APOLLO_MIDI_PACKET, *PAPOLLO_MIDI_PACKET;
+
 #pragma pack(pop)

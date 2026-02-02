@@ -72,6 +72,7 @@ typedef struct _PACKET_HOLDER {
         SS_CONTROLLER_TOUCH_PACKET controllerTouch;
         SS_CONTROLLER_MOTION_PACKET controllerMotion;
         SS_CONTROLLER_BATTERY_PACKET controllerBattery;
+        APOLLO_MIDI_PACKET midi;
         NV_UNICODE_PACKET unicode;
     } packet;
 } PACKET_HOLDER, *PPACKET_HOLDER;
@@ -1616,6 +1617,49 @@ int LiSendControllerBatteryEvent(uint8_t controllerNumber, uint8_t batteryState,
     holder->packet.controllerBattery.batteryState = batteryState;
     holder->packet.controllerBattery.batteryPercentage = batteryPercentage;
     memset(holder->packet.controllerBattery.zero, 0, sizeof(holder->packet.controllerBattery.zero));
+
+    err = LbqOfferQueueItem(&packetQueue, holder, &holder->entry);
+    if (err != LBQ_SUCCESS) {
+        LC_ASSERT(err == LBQ_BOUND_EXCEEDED);
+        Limelog("Input queue reached maximum size limit\n");
+        freePacketHolder(holder);
+    }
+
+    return err;
+}
+
+int LiSendMidiEvent(uint8_t deviceIndex, const uint8_t* data, uint8_t length) {
+    PPACKET_HOLDER holder;
+    int err;
+
+    if (!initialized) {
+        return -2;
+    }
+
+    // This is an Apollo protocol extension
+    if (!IS_SUNSHINE()) {
+        return LI_ERR_UNSUPPORTED;
+    }
+
+    if (data == NULL || length == 0 || length > 3) {
+        return -3;
+    }
+
+    holder = allocatePacketHolder(0);
+    if (holder == NULL) {
+        return -1;
+    }
+
+    holder->channelId = CTRL_CHANNEL_GENERIC;
+    holder->enetPacketFlags = ENET_PACKET_FLAG_RELIABLE;
+
+    holder->packet.midi.header.size = BE32(sizeof(APOLLO_MIDI_PACKET) - sizeof(uint32_t));
+    holder->packet.midi.header.magic = LE32(APOLLO_MIDI_MAGIC);
+    holder->packet.midi.deviceIndex = deviceIndex;
+    holder->packet.midi.messageLength = length;
+    holder->packet.midi.data[0] = data[0];
+    holder->packet.midi.data[1] = (length > 1) ? data[1] : 0;
+    holder->packet.midi.data[2] = (length > 2) ? data[2] : 0;
 
     err = LbqOfferQueueItem(&packetQueue, holder, &holder->entry);
     if (err != LBQ_SUCCESS) {
